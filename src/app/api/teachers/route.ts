@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const config = {
     api: {
-      bodyParser: false,
+        bodyParser: false,
     },
 };
 
@@ -15,18 +15,20 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const rawData = Object.fromEntries(formData.entries()) as unknown as Prisma.UserCreateInput;
     const data = Object.fromEntries(
-      Object.entries(rawData).map(([key, value]) => [key, String(value)])
+        Object.entries(rawData).map(([key, value]) => [key, String(value)])
     );
     const file = formData.get('user_img') as File;
-    
+
     try {
-        const havePhone = await prisma.user.findUnique({
-            where: {
-                phone: data.phone
+        if (data.phone) {
+            const havePhone = await prisma.user.findFirst({
+                where: {
+                    phone: data.phone
+                }
+            });
+            if (havePhone) {
+                return NextResponse.json({ message: "เบอร์โทรศัพท์นี้มีผู้ใช้แล้ว", type: "error" }, { status: 400 })
             }
-        });
-        if(havePhone) {
-            return NextResponse.json({ message: "เบอร์โทรศัพท์นี้มีผู้ใช้แล้ว", type: "error"}, { status: 400})
         }
         const haveTeacher = await prisma.user.findUnique({
             where: {
@@ -34,26 +36,26 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        if(haveTeacher) {
-            return NextResponse.json({ message: "ผู้ใช้นี้มีข้อมูลอยู่ในระบบแล้ว", type: "error"}, { status: 400})
+        if (haveTeacher) {
+            return NextResponse.json({ message: "ผู้ใช้นี้มีข้อมูลอยู่ในระบบแล้ว", type: "error" }, { status: 400 })
         } else {
             // ตรวจสอบว่ามีไฟล์รูปภาพหรือไม่
             let userImgPath = "avatar.jpg"; // ค่าเริ่มต้น
-            
+
             if (file && file.size > 0) {
                 userImgPath = await parseForm(file);
             }
-                    
+
             const teacher = await prisma.user.create({
                 data: {
-                  firstname: data.firstname,
-                  lastname: data.lastname,
-                  citizenId: data.citizenId,
-                  sex: Number(data.sex),
-                  phone: data.phone,
-                  birthday: new Date(data.birthday),
-                  user_img: userImgPath,
-                  role: Number(data.role),
+                    firstname: data.firstname,
+                    lastname: data.lastname,
+                    citizenId: data.citizenId,
+                    sex: Number(data.sex),
+                    phone: data.phone,
+                    birthday: new Date(data.birthday),
+                    user_img: userImgPath,
+                    role: Number(data.role),
                     teacher: {
                         create: {
                             departmentId: Number(data.departmentId) || null,
@@ -83,13 +85,13 @@ export async function POST(request: NextRequest) {
                     },
                 }
             });
-            
-            if(!teacher) return NextResponse.json({ message: "โปรดลองใหม่อีกครั้ง!", type: "error"}, {status: 500})
-            return NextResponse.json({ message: "เพิ่มข้อมูลสำเร็จ", type: "success"}, { status: 201})
+
+            if (!teacher) return NextResponse.json({ message: "โปรดลองใหม่อีกครั้ง!", type: "error" }, { status: 500 })
+            return NextResponse.json({ message: "เพิ่มข้อมูลสำเร็จ", type: "success" }, { status: 201 })
         }
-         
+
     } catch (error) {
-        return NextResponse.json({ message: "เกิดข้อผิดพลาด", type: "error"}, { status: 500})
+        return NextResponse.json({ message: "เกิดข้อผิดพลาด", type: "error" }, { status: 500 })
     }
 }
 

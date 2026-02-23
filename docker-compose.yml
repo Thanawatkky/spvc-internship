@@ -30,7 +30,7 @@
 
 services:
   spvc:
-    image: thanawatkky/dvt:release
+    image: thanawatkky/dvt:release-2122026
     container_name: spvc
     restart: unless-stopped
     networks:

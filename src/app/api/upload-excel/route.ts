@@ -10,7 +10,7 @@ interface ExcelRow {
   firstname: string;
   lastname: string;
   citizenId: string;
-  phone: string;
+  phone?: string;
   sex: number;
   birthday: string;
   dep_name: number;
@@ -45,23 +45,23 @@ const columnHeaderMap: Record<string, string> = {
 };
 
 const requiredUserFields = [
-  "firstname", "lastname", "citizenId", "phone", "sex",
+  "firstname", "lastname", "citizenId", "sex",
   "birthday", "dep_name"
 ];
 
 const requiredStudentFields = [
-  "studentId", "educationlevel", "major","dep_name", "academicyear", "gradelevel","term","room"
+  "studentId", "educationlevel", "major", "dep_name", "academicyear", "gradelevel", "term", "room"
 ];
 
 // Validation functions
 function validateCitizenId(citizenId: string): boolean {
   // Thai citizen ID validation (13 digits with checksum)
   if (!/^\d{13}$/.test(citizenId)) return false;
-  
+
   const digits = citizenId.split('').map(Number);
   const sum = digits.slice(0, 12).reduce((acc, digit, index) => acc + digit * (13 - index), 0);
   const checksum = (11 - (sum % 11)) % 10;
-  
+
   return checksum === digits[12];
 }
 
@@ -72,19 +72,19 @@ function validatePhone(phone: string): boolean {
 
 function sanitizeData(data: any): any {
   const sanitized: any = {};
-  
+
   for (const [key, value] of Object.entries(data)) {
     if (value === null || value === undefined || value === '') {
       continue;
     }
-    
+
     if (typeof value === 'string') {
       sanitized[key] = value.trim();
     } else {
       sanitized[key] = value;
     }
   }
-  
+
   return sanitized;
 }
 
@@ -95,34 +95,34 @@ export async function POST(req: Request) {
 
     // File validation
     if (!file) {
-      return NextResponse.json({ 
-        error: "กรุณาเลือกไฟล์สำหรับอัปโหลด", 
-        type: "error" 
+      return NextResponse.json({
+        error: "กรุณาเลือกไฟล์สำหรับอัปโหลด",
+        type: "error"
       }, { status: 400 });
     }
 
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
-      return NextResponse.json({ 
-        error: "กรุณาอัปโหลดไฟล์ Excel (.xlsx หรือ .xls) เท่านั้น", 
-        type: "error" 
+      return NextResponse.json({
+        error: "กรุณาอัปโหลดไฟล์ Excel (.xlsx หรือ .xls) เท่านั้น",
+        type: "error"
       }, { status: 400 });
     }
 
     // File size check (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ 
-        error: "ไฟล์มีขนาดใหญ่เกินไป (สูงสุด 10MB)", 
-        type: "error" 
+      return NextResponse.json({
+        error: "ไฟล์มีขนาดใหญ่เกินไป (สูงสุด 10MB)",
+        type: "error"
       }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const workbook = XLSX.read(buffer, { type: "buffer" });
-    
+
     if (!workbook.SheetNames.length) {
-      return NextResponse.json({ 
-        error: "ไม่พบแผ่นงานในไฟล์ Excel", 
-        type: "error" 
+      return NextResponse.json({
+        error: "ไม่พบแผ่นงานในไฟล์ Excel",
+        type: "error"
       }, { status: 400 });
     }
 
@@ -130,19 +130,19 @@ export async function POST(req: Request) {
     const rawRows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
 
     if (!rawRows.length) {
-      return NextResponse.json({ 
-        error: "ไม่พบข้อมูลในไฟล์", 
-        type: "error" 
+      return NextResponse.json({
+        error: "ไม่พบข้อมูลในไฟล์",
+        type: "error"
       }, { status: 400 });
     }
 
     // Separate header row and data rows
     const [headerRow, ...dataRows] = rawRows;
-    
+
     if (!headerRow || headerRow.length === 0) {
-      return NextResponse.json({ 
-        error: "ไม่พบหัวคอลัมน์ในไฟล์", 
-        type: "error" 
+      return NextResponse.json({
+        error: "ไม่พบหัวคอลัมน์ในไฟล์",
+        type: "error"
       }, { status: 400 });
     }
 
@@ -151,65 +151,74 @@ export async function POST(req: Request) {
       const trimmed = h?.toString().trim();
       return columnHeaderMap[trimmed] || null;
     });
-    
+
     // Check for required columns
     const allRequiredFields = [...requiredUserFields, ...requiredStudentFields];
     const missingHeaders = allRequiredFields.filter(field => !headers.includes(field));
-    
+
     if (missingHeaders.length > 0) {
-      const thaiHeaders = Object.keys(columnHeaderMap).filter(thaiKey => 
+      const thaiHeaders = Object.keys(columnHeaderMap).filter(thaiKey =>
         missingHeaders.includes(columnHeaderMap[thaiKey])
       );
-      
+
       return NextResponse.json({
         error: `คอลัมน์ที่ขาดหายไป: ${thaiHeaders.join(", ")}`,
         type: "error"
       }, { status: 400 });
     }
 
+    // Fetch available departments and majors for validation
+    const [departments, majors] = await Promise.all([
+      prisma.department.findMany({ select: { depname: true } }),
+      prisma.major.findMany({ select: { major_name: true } })
+    ]);
+
+    const validDepartments = new Set(departments.map(d => d.depname));
+    const validMajors = new Set(majors.map(m => m.major_name));
+
     // Process data rows
     const processedData: ExcelRow[] = [];
     const errors: string[] = [];
-    
+
     for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
       const row = dataRows[rowIndex];
       const mapped: Record<string, any> = {};
-      
+
       // Map row data to field names
       headers.forEach((key: string | null, colIndex: number) => {
         if (key && row[colIndex] !== undefined && row[colIndex] !== null) {
           mapped[key] = row[colIndex];
         }
       });
-      
+
       // Skip empty rows
       if (Object.keys(mapped).length === 0) continue;
-      
+
       // Sanitize data
       const sanitized = sanitizeData(mapped);
-      
+
       // Validate required fields
       const missingFields = allRequiredFields.filter(field => !sanitized[field]);
       if (missingFields.length > 0) {
         errors.push(`แถว ${rowIndex + 2}: ข้อมูลที่ขาดหายไป - ${missingFields.join(", ")}`);
         continue;
       }
-      
+
       // Validate citizen ID
       if (!validateCitizenId(sanitized.citizenId)) {
         errors.push(`แถว ${rowIndex + 2}: เลขบัตรประชาชนไม่ถูกต้อง`);
         continue;
       }
-      
-      // Validate phone number
-      if (!validatePhone(sanitized.phone)) {
+
+      // Validate phone number (only if provided)
+      if (sanitized.phone && !validatePhone(sanitized.phone)) {
         errors.push(`แถว ${rowIndex + 2}: เบอร์โทรศัพท์ไม่ถูกต้อง`);
         continue;
       }
 
-      if(sanitized.sex === 'ชาย'){
+      if (sanitized.sex === 'ชาย') {
         sanitized.sex = 1;
-      } else if(sanitized.sex === 'หญิง'){
+      } else if (sanitized.sex === 'หญิง') {
         sanitized.sex = 2;
       }
       // Validate sex (1 = male, 2 = female)
@@ -218,11 +227,24 @@ export async function POST(req: Request) {
         continue;
       }
 
-      
-      
+      // Validate Department
+      if (!validDepartments.has(sanitized.dep_name.trim())) {
+        errors.push(`แถว ${rowIndex + 2}: ไม่พบข้อมูลแผนกวิชา "${sanitized.dep_name}"`);
+        continue;
+      }
+
+      // Validate Major
+      if (!validMajors.has(sanitized.major.trim())) {
+        errors.push(`แถว ${rowIndex + 2}: ไม่พบข้อมูลสาขาวิชา "${sanitized.major}"`);
+        continue;
+      }
+
+
+
+
       processedData.push(sanitized as ExcelRow);
     }
-    
+
     // Return validation errors if any
     if (errors.length > 0) {
       return NextResponse.json({
@@ -230,7 +252,7 @@ export async function POST(req: Request) {
         type: "error"
       }, { status: 400 });
     }
-    
+
     if (processedData.length === 0) {
       return NextResponse.json({
         error: "ไม่พบข้อมูลที่ถูกต้องสำหรับนำเข้า",
@@ -243,7 +265,7 @@ export async function POST(req: Request) {
     let skippedCount = 0;
     let errorCount = 0;
     const batchSize = 50;
-    
+
     for (let i = 0; i < processedData.length; i += batchSize) {
       const batch = processedData.slice(i, i + batchSize);
 
@@ -253,22 +275,22 @@ export async function POST(req: Request) {
             const existingUser = await tx.user.findUnique({
               where: { citizenId: String(row.citizenId) }
             });
-            
+
             if (existingUser) {
               skippedCount++;
               continue;
             }
-            
+
             // Check if student ID already exists
             const existingStudent = await tx.student.findUnique({
               where: { studentId: String(row.studentId) }
             });
-            
+
             if (existingStudent) {
               skippedCount++;
               continue;
             }
-            
+
             // Parse birthday
             let birthday: Date;
             try {
@@ -278,7 +300,7 @@ export async function POST(req: Request) {
               } else {
                 // ส่วนนี้สำหรับข้อความ (เช่น "10/05/2540")
                 const tempDate = dayjs(row.birthday);
-          
+
                 // ตรวจสอบว่าวันที่ถูกต้อง และปีที่ได้มีค่าสูง (น่าจะเป็น พ.ศ.)
                 if (tempDate.isValid() && tempDate.year() > 2400) {
                   // ถ้าใช่ ให้ลบ 543 ปี เพื่อแปลงเป็น ค.ศ.
@@ -288,26 +310,26 @@ export async function POST(req: Request) {
                   birthday = tempDate.toDate();
                 }
               }
-                    
+
               // (เพิ่มการตรวจสอบ Invalid Date หลังการแปลงค่า)
               if (isNaN(birthday.getTime())) {
                 throw new Error("Invalid date after processing");
               }
-          
+
             } catch (error) {
               console.error(`Invalid birthday format for student ${row.studentId}:`, row.birthday);
               errorCount++;
               continue;
             }
             const passwordString = dayjs(birthday).add(543, 'year').format('DD/MM/YYYY')
-            
+
             // Create user with student
             await tx.user.create({
               data: {
                 firstname: String(row.firstname),
                 lastname: String(row.lastname),
                 citizenId: String(row.citizenId),
-                phone: String(row.phone).replace(/[-\s]/g, ''),
+                phone: row.phone ? String(row.phone).replace(/[-\s]/g, '') : null,
                 sex: Number(row.sex),
                 birthday: birthday,
                 role: 7, // Student role
@@ -315,11 +337,11 @@ export async function POST(req: Request) {
                 student: {
                   create: {
                     studentId: String(row.studentId),
-                    education: { 
-                      connect: { name: String(row.educationlevel) } 
+                    education: {
+                      connect: { name: String(row.educationlevel) }
                     },
-                    major: { 
-                      connect: { major_name: String(row.major) } 
+                    major: {
+                      connect: { major_name: String(row.major) }
                     },
                     academicYear: String(row.academicyear),
                     department: {
@@ -338,9 +360,9 @@ export async function POST(req: Request) {
                 }
               }
             });
-            
+
             createdCount++;
-            
+
           } catch (error) {
             console.error(`Error creating user for student ${row.studentId}:`, error);
             errorCount++;
@@ -349,7 +371,7 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: `นำเข้าข้อมูลสำเร็จ! สร้างใหม่: ${createdCount} รายการ, ข้าม: ${skippedCount} รายการ${errorCount > 0 ? `, ข้อผิดพลาด: ${errorCount} รายการ` : ''}`,
       type: "success",
       stats: {
@@ -362,9 +384,9 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("Upload Error:", error);
-    return NextResponse.json({ 
-      error: "เกิดข้อผิดพลาดขณะประมวลผล กรุณาลองใหม่อีกครั้ง", 
-      type: "error" 
+    return NextResponse.json({
+      error: "เกิดข้อผิดพลาดขณะประมวลผล กรุณาลองใหม่อีกครั้ง",
+      type: "error"
     }, { status: 500 });
   }
 }

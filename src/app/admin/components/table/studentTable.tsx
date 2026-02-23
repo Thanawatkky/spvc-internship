@@ -55,61 +55,61 @@ import { Button } from "@/app/components/shadcn-ui/Default-Ui/button";
 export interface PaginationTableType {
   id: number;
   studentId: string;
-    term: string;
-    education: {
-      id: number;
-      name: string;
-    };
-    major: {
-      id: number;
-      major_name: string;
-    };
-    academicYear: string;
-    gradeLevel: string;
-    room: string;
-    department: {
-      id: number;
-      depname: string;
-    };
+  term: string;
+  education: {
+    id: number;
+    name: string;
+  };
+  major: {
+    id: number;
+    major_name: string;
+  };
+  academicYear: string;
+  gradeLevel: string;
+  room: string;
+  department: {
+    id: number;
+    depname: string;
+  };
   user: {
-  id?: string;
-  citizenId: string;
-  user_img: string;
-  phone?: string;
-  birthday?: string;
-    
-  
-  firstname?: string;
-  lastname?: string;
-  role?: string;
-  sex?: string;
-};
+    id?: string;
+    citizenId: string;
+    user_img: string;
+    phone?: string;
+    birthday?: string;
+
+
+    firstname?: string;
+    lastname?: string;
+    role?: string;
+    sex?: string;
+  };
   actions?: any;
 }
 
 interface AddStudentDialogProps {
   onSuccess?: () => void;
 }
-const gender_options: {[key: number]: string} = {
+const gender_options: { [key: number]: string } = {
   1: "นาย",
   2: "นางสาว",
 }
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 const columnHelper = createColumnHelper<PaginationTableType>();
 const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
-  
+
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
 
 
-  const router = useRouter();  
+  const router = useRouter();
   const { data: majorData, isLoading: ismajorsLoading } = useSWR(
     "/api/major",
     fetcher
   );
 
-  const { data: deptData, isLoading: isDeptLoading } = useSWR( 
+  const { data: deptData, isLoading: isDeptLoading } = useSWR(
     "/api/departments",
     fetcher
   );
@@ -157,7 +157,7 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
   );
 
   useEffect(() => {
-   if(ismajorsLoading || isDeptLoading) return; 
+    if (ismajorsLoading || isDeptLoading) return;
     if (!formData.department) {
       // ยังไม่ได้เลือก department → แสดงทุก major
       setFilteredMajors(majors);
@@ -168,7 +168,7 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
       );
       setFilteredMajors(filtered);
     }
-   
+
   }, [formData.department, majors]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,7 +208,7 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
       submitData.append("studentId", formData.studentId); // จะใช้เป็น username ด้วย
       submitData.append("major_id", formData.major_id);
       submitData.append("educationLevel", formData.educationLevel);
-      submitData.append('gradeLevel',formData.gradeLevel)
+      submitData.append('gradeLevel', formData.gradeLevel)
       submitData.append("room", formData.room);
       submitData.append("term", formData.term);
       submitData.append("academicYear", formData.academicYear);
@@ -289,7 +289,7 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
       if (imageFile) {
         submitData.append("user_img", imageFile);
       }
-      
+
       const response = await fetch(`/api/students/${editingStudent.user.id}`, {
         method: "PUT",
         body: submitData,
@@ -357,7 +357,7 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
 
   const handleEdit = (student: PaginationTableType) => {
     setEditingStudent(student);
-    
+
     // เติมข้อมูลเดิมลงในฟอร์ม
     setFormData({
       firstname: student.user.firstname || "",
@@ -431,6 +431,30 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
     });
   };
 
+  const handleDownloadExample = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/download-example");
+
+      if (!response.ok) {
+        throw new Error("Download failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "example_student.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      showToast("ไม่สามารถดาวน์โหลดไฟล์ได้", "error");
+    }
+  };
+
   async function handleSubmitUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -476,9 +500,8 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
             unoptimized={true}
           />
           <div className="truncate line-clamp-2 max-w-56">
-            <h6 className="text-base">{`${gender_options[Number(info.getValue().sex) ?? 0] || "ไม่ทราบเพศ"}${info.getValue().firstname} ${
-              info.getValue().lastname
-            }`}</h6>
+            <h6 className="text-base">{`${gender_options[Number(info.getValue().sex) ?? 0] || "ไม่ทราบเพศ"}${info.getValue().firstname} ${info.getValue().lastname
+              }`}</h6>
             <p className="text-sm text-darklink dark:text-bodytext">
               {userRole(Number(info.getValue().role))}
             </p>
@@ -579,13 +602,13 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
     debugColumns: false,
   });
 
-  if(isLoading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] 2xl:min-h-[600px] gap-4 p-8">
-        <Spinner 
-          size="xl" 
-          color="primary" 
-          aria-label="Loading..." 
+        <Spinner
+          size="xl"
+          color="primary"
+          aria-label="Loading..."
           className="text-blue-600 dark:text-blue-500"
         />
         <p className="text-lg font-medium text-gray-600 dark:text-gray-300">
@@ -594,16 +617,16 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
       </div>
     );
   }
- 
-  
-  if(error) {
+
+
+  if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] 2xl:min-h-[600px] gap-4 p-8">
         <p className="text-lg font-medium text-red-600 dark:text-red-500">
           เกิดข้อผิดพลาดในการโหลดข้อมูลนักศึกษา: {error.message}
         </p>
       </div>
-    );  
+    );
 
   }
 
@@ -622,7 +645,13 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
               <DialogHeader>
                 <DialogTitle>อัปโหลดไฟล์ Excel</DialogTitle>
                 <DialogDescription>
-                  กรุณาอัปโหลดไฟล์ .xlsx ที่มีข้อมูลนักศึกษา
+                  กรุณาอัปโหลดไฟล์ .xlsx ที่มีข้อมูลนักศึกษา{" "}
+                  <span
+                    onClick={handleDownloadExample}
+                    className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
+                  >
+                    ดาวน์โหลดไฟล์ตัวอย่าง
+                  </span>
                 </DialogDescription>
               </DialogHeader>
 
@@ -742,9 +771,9 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
                   <div className="space-y-2">
                     <Label htmlFor="birthday">วันเกิด *</Label>
                     <Datepicker
-                        language="th"
-                        onSelectedDateChanged={(date) => setDate(date)}
-                      />
+                      language="th"
+                      onSelectedDateChanged={(date) => setDate(date)}
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -849,7 +878,7 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
                         )}
                       </SelectContent>
                     </Select>
-                    
+
                   </div>
                 </div>
 
@@ -1062,8 +1091,8 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
                   <div className="space-y-2">
                     <Label htmlFor="edit-birthday">วันเกิด *</Label>
                     <Datepicker
-                        language="th"
-                        onSelectedDateChanged={(date) => setDate(date)}                      />
+                      language="th"
+                      onSelectedDateChanged={(date) => setDate(date)} />
                   </div>
 
                   <div className="space-y-2">
@@ -1168,7 +1197,7 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
                         )}
                       </SelectContent>
                     </Select>
-                    
+
                   </div>
                 </div>
 
@@ -1295,9 +1324,9 @@ const StudentTable = ({ onSuccess }: AddStudentDialogProps) => {
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                       </th>
                     ))}
                   </tr>

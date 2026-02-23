@@ -4,7 +4,7 @@
 import { showToast } from '@/app/components/sweetalert/sweetalert';
 import { Button, Label, TextInput, Card, Spinner } from 'flowbite-react';
 import { signOut, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+
 import { FormEvent, useState } from 'react';
 import { IconPassword, IconCheck, IconX, IconAlertCircle } from '@tabler/icons-react';
 import Swal from 'sweetalert2';
@@ -18,7 +18,7 @@ export default function FirstLoginChangePasswordPage() {
         confirmPassword: ''
     });
     const { data: session, update, status } = useSession();
-    const router = useRouter();
+
 
     if (status === 'loading' || !session) {
         return (
@@ -127,12 +127,16 @@ export default function FirstLoginChangePasswordPage() {
                         is_first_login: false,
                         skip_password_change: null,
                     }
-                });
+                })
+
+                // ใช้ window.location.href แทน router.push เพื่อบังคับให้โหลดหน้าใหม่ทั้งหมด
+                // เพื่อให้ middleware อ่าน JWT cookie ที่อัพเดทแล้ว (is_first_login: false)
+                window.location.href = "/protected";
 
 
             } else {
                 showToast(data.message, data.type);
-                // router.push("/protected")
+                window.location.href = "/protected";
             }
         } catch (error) {
             showToast('เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน', 'error');
@@ -141,43 +145,6 @@ export default function FirstLoginChangePasswordPage() {
         }
     };
 
-    const handleSkip = async () => {
-        Swal.fire({
-            title: 'คุณแน่ใจหรือไม่?',
-            text: "คุณต้องการข้ามการเปลี่ยนรหัสผ่านในครั้งนี้หรือไม่",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#2563EB',
-            cancelButtonColor: '#6B7280',
-            confirmButtonText: 'ใช่, ข้ามไปก่อน',
-            cancelButtonText: 'ยกเลิก',
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    const res = await fetch(`/api/users/${session.user.id}/skip-password`, {
-                        method: "PUT",
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        await update({
-                            ...session,
-                            user: {
-                                ...session?.user,
-                                skip_password_change: data.skipUntil,
-                            }
-                        });
-                        window.location.href = '/protected';
-
-                    } else {
-                        showToast(data.message, data.type);
-                    }
-                } catch (error) {
-                    showToast('เกิดข้อผิดพลาดในการข้ามการเปลี่ยนรหัสผ่าน', 'error');
-                }
-            }
-        });
-
-    };
 
     const passwordStrength = getPasswordStrength(newPassword);
 
@@ -206,9 +173,7 @@ export default function FirstLoginChangePasswordPage() {
                                 <p className="text-sm text-yellow-800 font-medium">
                                     นี่คือการเข้าใช้งานครั้งแรกของคุณ
                                 </p>
-                                <p className="text-sm text-yellow-700 mt-1">
-                                    เราแนะนำให้คุณเปลี่ยนรหัสผ่านเพื่อความปลอดภัยของบัญชี แต่คุณสามารถข้ามขั้นตอนนี้ไปก่อนได้
-                                </p>
+
                             </div>
                         </div>
                     </div>
@@ -335,16 +300,6 @@ export default function FirstLoginChangePasswordPage() {
                                         เปลี่ยนรหัสผ่าน
                                     </>
                                 )}
-                            </Button>
-                            <Button
-                                type="button"
-                                size="lg"
-                                color="gray"
-                                onClick={handleSkip}
-                                disabled={isSubmitting}
-                                className="flex-1"
-                            >
-                                ข้ามไปก่อน
                             </Button>
                         </div>
                     </form>
