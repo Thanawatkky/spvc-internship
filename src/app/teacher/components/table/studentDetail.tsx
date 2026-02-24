@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -10,21 +10,12 @@ import {
   createColumnHelper,
   ColumnFiltersState,
 } from "@tanstack/react-table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/app/components/shadcn-ui/Default-Ui/dialog";
-import { Badge, Button, Dropdown, Select, Spinner } from "flowbite-react";
-import { IconChevronLeft, IconChevronRight, IconChevronsLeft, IconChevronsRight, IconDots } from "@tabler/icons-react";
+
+import { Button, Spinner } from "flowbite-react";
+import { IconChevronLeft, IconChevronRight, IconChevronsLeft, IconChevronsRight } from "@tabler/icons-react";
 import { Icon } from "@iconify/react";
 import TitleIconCard from "@/app/components/shared/TitleIconCard";
-import Swal from "sweetalert2";
 import { showToast } from "@/app/components/sweetalert/sweetalert";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import useSWR from "swr";
 import { formatThaiDate } from "@/lib/utils";
@@ -47,10 +38,17 @@ interface Inturnship {
   dayperweeks: string;
 }
 
+interface Advisor {
+  id: number;
+  user: {
+    firstname: string;
+    lastname: string;
+  };
+}
+
 interface Student {
   id: number;
   studentId: string;
-  major: string;
   academicYear: string;
   term: string;
   room: string;
@@ -58,21 +56,28 @@ interface Student {
     id: number;
     name: string;
   };
+  major: {
+    id: number;
+    major_name: string;
+  }
+  department: {
+    id: number;
+    depname: string;
+  };
   gradeLevel: string;
   inturnship: Inturnship;
+  user: UserData;
   report: Report[];
+  advisor: Advisor | null;
 }
 
 export interface UserData {
   id: number;
   firstname: string;
   lastname: string;
-  department: {
-    id: number;
-    depname: string;
-  };
-  student: Student;
   sex: number;
+  phone: string | null;
+  birthday: string | null;
 }
 
 type StudentProps = {
@@ -96,33 +101,42 @@ const StudentDetailTable = ({ id }: StudentProps) => {
     department: 'กำลังโหลด...',
     major: 'กำลังโหลด...',
     academicYear: 'กำลังโหลด...',
-    internshipDays: 'กำลังโหลด...'
+    internshipDays: 'กำลังโหลด...',
+    birthday: 'กำลังโหลด...',
+    phone: 'กำลังโหลด...',
+    advisor: 'กำลังโหลด...'
   });
 
-  const { data, error, isLoading, mutate } = useSWR<UserData>(
+  const { data, error, isLoading, mutate } = useSWR<Student>(
     `/api/report/studentDetail/${id}`,
     fetcher,
     {
       onSuccess: (data) => {
         if (data) {
           setStudentInfo({
-            studentId: data.student?.studentId || 'ไม่มีข้อมูล',
-            name: `${data.firstname || ''} ${data.lastname || ''}`.trim(),
+            studentId: data.studentId || 'ไม่มีข้อมูล',
+            name: `${data.user.firstname || ''} ${data.user.lastname || ''}`.trim(),
             department: data.department?.depname || 'ไม่มีข้อมูล',
-            major: data.student?.major || 'ไม่มีข้อมูล',
-            academicYear: data.student
-              ? `${data.student.term}/${data.student.academicYear}`
+            major: data.major?.major_name || 'ไม่มีข้อมูล',
+            academicYear: data
+              ? `${data.term}/${data.academicYear}`
               : 'ไม่มีข้อมูล',
-            internshipDays: data.student?.inturnship?.selectedDays?.join(', ') || 'ไม่มีข้อมูล'
+            internshipDays: data.inturnship?.selectedDays?.join(', ') || 'ไม่มีข้อมูล',
+            birthday: data.user?.birthday ? formatThaiDate(data.user.birthday) : 'ไม่มีข้อมูล',
+            phone: data.user?.phone || 'ไม่มีข้อมูล',
+            advisor: data.advisor
+              ? `${data.advisor.user.firstname} ${data.advisor.user.lastname}`
+              : 'ไม่มีข้อมูล'
           });
         }
       },
       onError: (err) => {
-        console.error("API Error:", err);
+        console.log("API Error:", err);
         showToast("ไม่สามารถโหลดข้อมูลได้", "error");
       }
     }
   );
+console.log("error:", data );
 
 
   const exportToPDF = async () => {
@@ -137,8 +151,53 @@ const StudentDetailTable = ({ id }: StudentProps) => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
+    // === หน้าปก ===
+    pdf.setFont('THSarabunNew');
 
-    const headerText = `รายงานการฝึกงาน \n ${data?.student?.studentId}  ${data?.sex === 1 ? "นาย" : data?.sex === 2 ? "นางสาว" : ""} ${data?.firstname} ${data?.lastname} ระดับชั้น ${data?.student?.gradeLevel} กลุ่ม ${data?.student?.room} สาขาวิชา ${data?.student?.major}`;
+    // โลโก้ - จัดให้อยู่ตรงกลาง
+    const logoWidth = 50;
+    const logoHeight = 50;
+    const logoX = (pageWidth - logoWidth) / 2;
+    pdf.addImage("/images/logos/logo_pdf.png", 'PNG', logoX, 30, logoWidth, logoHeight);
+
+    // ชื่อสถาบัน
+    pdf.setFontSize(40);
+    pdf.text('วิทยาลัยอาชีวะศึกษาสุพรรณบุรี', pageWidth / 2, 100, { align: 'center' });
+
+    // หัวข้อรายงาน
+    pdf.setFontSize(30);
+    pdf.text('รายงานผลการฝึกงาน', pageWidth / 2, 120, { align: 'center' });
+
+    // รายละเอียดภาคเรียน
+    pdf.setFontSize(30);
+    const currentYear = new Date().getFullYear() + 543;
+    pdf.text(`ภาคเรียนที่ ${data?.term || '1'} ปีการศึกษา ${data?.academicYear || currentYear}`, pageWidth / 2, 140, { align: 'center' });
+
+    // ข้อมูลนักศึกษา - จัดให้อยู่ตรงกลาง
+    pdf.setFontSize(30);
+    const sexPrefix = data?.user?.sex === 1 ? "นาย" : data?.user?.sex === 2 ? "นางสาว" : "";
+    const studentInfo2 = [
+      `${data?.studentId || ''}`,
+      `${sexPrefix} ${data?.user?.firstname || ''} ${data?.user?.lastname || ''}`,
+      `ระดับชั้น ${data?.gradeLevel || ''} กลุ่ม ${data?.room || ''}`,
+      `สาขาวิชา ${data?.major?.major_name || ""}`
+    ];
+
+    let yPosition = 170;
+    studentInfo2.forEach(info => {
+      pdf.text(info, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 20;
+    });
+
+    // หัวข้อด้านล่าง
+    pdf.setFontSize(40);
+    pdf.text('คำนำงานคณะกรรมการการอาชีวศึกษา', pageWidth / 2, 250, { align: 'center' });
+    pdf.text('กระทรวงศึกษาธิการ', pageWidth / 2, 270, { align: 'center' });
+
+    // === หน้าตาราง ===
+    pdf.addPage();
+
+    const headerText = `รายงานการฝึกงาน \n ${data?.studentId}  ${sexPrefix} ${data?.user?.firstname} ${data?.user?.lastname} ระดับชั้น ${data?.gradeLevel} กลุ่ม ${data?.room} สาขาวิชา ${data?.major?.major_name}`;
     pdf.setFont('THSarabunNew');
     pdf.setFontSize(18);
     pdf.text(headerText, pageWidth / 2, 15, { align: 'center' });
@@ -204,7 +263,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
   ];
 
   const table = useReactTable({
-    data: data?.student.report || [],
+    data: data?.report || [],
     columns,
     filterFns: {},
     state: {
@@ -269,6 +328,18 @@ const StudentDetailTable = ({ id }: StudentProps) => {
           <p className="text-sm text-gray-500">วันฝึกงาน</p>
           <p className="text-base font-medium">{studentInfo.internshipDays}</p>
         </div>
+        <div>
+          <p className="text-sm text-gray-500">วันเกิด</p>
+          <p className="text-base font-medium">{studentInfo.birthday}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">เบอร์โทร</p>
+          <p className="text-base font-medium">{studentInfo.phone}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">ครูที่ปรึกษา</p>
+          <p className="text-base font-medium">{studentInfo.advisor}</p>
+        </div>
       </div>
       <div className="flex justify-end items-center my-6">
         <Button onClick={exportToPDF}>
@@ -277,7 +348,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
 
       </div>
       <div className="border rounded-md border-ld overflow-hidden">
-        {!data?.student.report || data.student.report.length === 0 ? (
+        {!data?.report || data.report.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8">
             <Icon icon="tabler:report-off" className="text-gray-400 text-4xl mb-2" />
             <span className="text-gray-500">ไม่พบรายงานการฝึกงาน</span>

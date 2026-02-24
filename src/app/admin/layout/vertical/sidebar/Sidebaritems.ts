@@ -6,10 +6,10 @@ export interface ChildItem {
   item?: any;
   url?: any;
   color?: string;
-  disabled?:boolean,
-  subtitle?:string,
-  badge?:boolean,
-  badgeType?:string,
+  disabled?: boolean,
+  subtitle?: string,
+  badge?: boolean,
+  badgeType?: string,
 }
 
 export interface MenuItem {
@@ -21,10 +21,10 @@ export interface MenuItem {
   items?: MenuItem[];
   children?: ChildItem[];
   url?: any;
-  disabled?:boolean,
-  subtitle?:string,
-  badgeType?:string,
-  badge?:boolean,
+  disabled?: boolean,
+  subtitle?: string,
+  badgeType?: string,
+  badge?: boolean,
 }
 
 
@@ -65,11 +65,11 @@ const SidebarContent: MenuItem[] = [
             name: "จัดการข้อมูลบุคคลากร",
             url: "/admin/teachers",
           },
-          {
-            id: uniqueId(),
-            name: "จัดการข้อมูลสถานประกอบการ",
-            url: "/admin/company",
-          }
+          // {
+          //   id: uniqueId(),
+          //   name: "จัดการข้อมูลสถานประกอบการ",
+          //   url: "/admin/company",
+          // }
         ],
       },
       {
@@ -84,7 +84,7 @@ const SidebarContent: MenuItem[] = [
       //   id: uniqueId(),
       //   url: "/dashboards/eCommerce",
       // },
-      
+
       // {
       //   name: "NFT",
       //   icon: 'tabler:currency-dollar',
@@ -139,7 +139,7 @@ const SidebarContent: MenuItem[] = [
   //       icon: "tabler:mail",
   //       url: "/apps/email",
   //     },
-      
+
   //     {
   //       id: uniqueId(),
   //       name: "Notes",
@@ -878,7 +878,7 @@ const SidebarContent: MenuItem[] = [
   //             name: "Expanding",
   //             url: "/react-tables/expanding",
   //           },
-            
+
   //         ],
   //     },
   //   ],

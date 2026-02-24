@@ -251,34 +251,7 @@ const StudentTable = () => {
       ),
       header: () => <span>ระดับชั้น</span>,
     }),
-    columnHelper.display({
-      id: "actions",
-      cell: (info) => (
-        <Dropdown
-          label=""
-          dismissOnClick={false}
-          renderTrigger={() => (
-            <span className="h-9 w-9 flex justify-center items-center rounded-full hover:bg-lightprimary hover:text-primary cursor-pointer">
-              <IconDots size={22} />
-            </span>
-          )}
-        >
-          {[
-            {
-              icon: "tabler:eye",
-              listtitle: "รายละเอียด",
-              onclick: () => router.push(`/departments/students/${info.row.original.id as string}`)
-            },
-          ].map((item, index) => (
-            <Dropdown.Item key={index} onClick={item.onclick} className="flex gap-3">
-              <Icon icon={item.icon} height={18} />
-              <span>{item.listtitle}</span>
-            </Dropdown.Item>
-          ))}
-        </Dropdown>
-      ),
-      header: () => <span></span>,
-    }),
+   
   ];
 
   const table = useReactTable({

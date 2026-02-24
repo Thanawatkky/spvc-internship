@@ -86,14 +86,14 @@ export default function EditProfilePage() {
           <div className="border border-lg rounded-2xl p-4 sm:p-6 shadow">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
               <h3 className="text-lg sm:text-xl font-semibold text-gray-800">ข้อมูลส่วนตัว</h3>
-              <Button
+              {/* <Button
                 outline
                 size="sm"
                 className="rounded-full w-full sm:w-auto"
                 onClick={() => setOpenProfile(true)}
               >
                 <FaPen className="mr-2" /> แก้ไขข้อมูล
-              </Button>
+              </Button> */}
               <Modal show={openProfile || openStudent || openInternDay} size="3xl" onClose={() => {
                 setOpenProfile(false);
                 setOpenStudent(false);
@@ -213,14 +213,14 @@ export default function EditProfilePage() {
           <div className="border border-lg rounded-2xl p-4 sm:p-6 shadow">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
               <h3 className="text-lg sm:text-xl font-semibold text-gray-800">ข้อมูลนักศึกษา</h3>
-              <Button
+              {/* <Button
                 outline
                 size="sm"
                 className="rounded-full w-full sm:w-auto"
                 onClick={() => setOpenStudent(true)}
               >
                 <FaPen className="mr-2" /> แก้ไขข้อมูล
-              </Button>
+              </Button> */}
 
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 text-sm sm:text-base">

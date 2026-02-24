@@ -113,8 +113,8 @@ const StudentDetailTable = ({ id }: StudentProps) => {
             name: `${data.user.firstname || ''} ${data.user.lastname || ''}`.trim(),
             department: data.department?.depname || 'ไม่มีข้อมูล',
             major: data.major.major_name || 'ไม่มีข้อมูล',
-            academicYear: data 
-              ? `${data.term}/${data.academicYear}` 
+            academicYear: data
+              ? `${data.term}/${data.academicYear}`
               : 'ไม่มีข้อมูล',
             internshipDays: data.inturnship?.selectedDays?.join(', ') || 'ไม่มีข้อมูล'
           });
@@ -129,7 +129,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
 
 
   const exportToPDF = async () => {
-    
+
     const input = document.getElementById('reportContent');
     if (!input) return;
 
@@ -140,8 +140,53 @@ const StudentDetailTable = ({ id }: StudentProps) => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
+    // === หน้าปก ===
+    pdf.setFont('THSarabunNew');
 
-    const headerText = `รายงานการฝึกงาน \n ${data?.studentId}  ${data?.user.sex === 1 ? "นาย" : data?.user.sex === 2 ? "นางสาว": ""} ${data?.user.firstname} ${data?.user.lastname} ระดับชั้น ${data?.gradeLevel} กลุ่ม ${data?.room} สาขาวิชา ${data?.major.major_name} แผนก ${data?.department.depname} ปีการศึกษา ${data?.term}/${data?.academicYear}`;
+    // โลโก้ - จัดให้อยู่ตรงกลาง
+    const logoWidth = 50;
+    const logoHeight = 50;
+    const logoX = (pageWidth - logoWidth) / 2;
+    pdf.addImage("/images/logos/logo_pdf.png", 'PNG', logoX, 30, logoWidth, logoHeight);
+
+    // ชื่อสถาบัน
+    pdf.setFontSize(40);
+    pdf.text('วิทยาลัยอาชีวะศึกษาสุพรรณบุรี', pageWidth / 2, 100, { align: 'center' });
+
+    // หัวข้อรายงาน
+    pdf.setFontSize(30);
+    pdf.text('รายงานผลการฝึกงาน', pageWidth / 2, 120, { align: 'center' });
+
+    // รายละเอียดภาคเรียน
+    pdf.setFontSize(30);
+    const currentYear = new Date().getFullYear() + 543;
+    pdf.text(`ภาคเรียนที่ ${data?.term || '1'} ปีการศึกษา ${data?.academicYear || currentYear}`, pageWidth / 2, 140, { align: 'center' });
+
+    // ข้อมูลนักศึกษา - จัดให้อยู่ตรงกลาง
+    pdf.setFontSize(30);
+    const sexPrefix = data?.user.sex === 1 ? "นาย" : data?.user.sex === 2 ? "นางสาว" : "";
+    const studentInfo2 = [
+      `${data?.studentId || ''}`,
+      `${sexPrefix} ${data?.user.firstname || ''} ${data?.user.lastname || ''}`,
+      `ระดับชั้น ${data?.gradeLevel || ''} กลุ่ม ${data?.room || ''}`,
+      `สาขาวิชา ${data?.major.major_name || ""}`
+    ];
+
+    let yPosition = 170;
+    studentInfo2.forEach(info => {
+      pdf.text(info, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 20;
+    });
+
+    // หัวข้อด้านล่าง
+    pdf.setFontSize(40);
+    pdf.text('คำนำงานคณะกรรมการการอาชีวศึกษา', pageWidth / 2, 250, { align: 'center' });
+    pdf.text('กระทรวงศึกษาธิการ', pageWidth / 2, 270, { align: 'center' });
+
+    // === หน้าตาราง ===
+    pdf.addPage();
+
+    const headerText = `รายงานการฝึกงาน \n ${data?.studentId}  ${sexPrefix} ${data?.user.firstname} ${data?.user.lastname} ระดับชั้น ${data?.gradeLevel} กลุ่ม ${data?.room} สาขาวิชา ${data?.major.major_name} แผนก ${data?.department.depname} ปีการศึกษา ${data?.term}/${data?.academicYear}`;
     pdf.setFont('THSarabunNew');
     pdf.setFontSize(18);
     pdf.text(headerText, pageWidth / 2, 15, { align: 'center' });
@@ -156,7 +201,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
     const blob = pdf.output('blob');
     const blobURL = URL.createObjectURL(blob);
     window.open(blobURL)
-};
+  };
   const columns = [
     columnHelper.display({
       id: "index",
@@ -202,7 +247,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
       ),
       header: "รายละเอียด",
     }),
-   
+
   ];
 
   const table = useReactTable({
@@ -243,7 +288,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
     );
   }
 
-  if  (!data?.report || data.report.length === 0 ){
+  if (!data?.report || data.report.length === 0) {
     <div className="flex flex-col items-center justify-center py-8">
       <Icon icon="tabler:report-off" className="text-gray-400 text-4xl mb-2" />
       <span className="text-gray-500">ไม่พบรายงานการฝึกงาน</span>
@@ -251,7 +296,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
   }
   return (
     <TitleIconCard title="ข้อมูลนักศึกษา">
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-6 p-4 rounded-lg">
         <div>
           <p className="text-sm text-gray-500">รหัสนักศึกษา</p>
@@ -279,11 +324,11 @@ const StudentDetailTable = ({ id }: StudentProps) => {
         </div>
       </div>
       <div className="flex justify-end items-center my-6">
-          <Button onClick={exportToPDF}>
-              <Icon icon="tabler:printer" height={20} />
-            </Button>
-            
-            </div>
+        <Button onClick={exportToPDF}>
+          <Icon icon="tabler:printer" height={20} />
+        </Button>
+
+      </div>
       <div className="border rounded-md border-ld overflow-hidden">
         {!data?.report || data.report.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8">
@@ -321,14 +366,14 @@ const StudentDetailTable = ({ id }: StudentProps) => {
                 </tbody>
               </table>
             </div>
-            
+
             <div className="sm:flex gap-2 p-3 items-center justify-between">
               <div className="flex items-center gap-2">
                 <h1 className="text-gray-700">
                   {table.getPrePaginationRowModel().rows.length} รายการ
                 </h1>
               </div>
-              
+
               <div className="sm:flex items-center gap-2 sm:mt-0 mt-3">
                 <div className="flex">
                   <h2 className="text-gray-700 pe-1">หน้า</h2>
@@ -336,7 +381,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
                     {table.getState().pagination.pageIndex + 1} จาก {table.getPageCount()}
                   </h2>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   | ไปที่หน้า:
                   <input
@@ -351,7 +396,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
                     className="w-16 form-control-input border rounded px-2 py-1"
                   />
                 </div>
-                
+
                 <div className="select-md sm:mt-0 mt-3">
                   <select
                     value={table.getState().pagination.pageSize}
@@ -367,7 +412,7 @@ const StudentDetailTable = ({ id }: StudentProps) => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="flex gap-2 sm:mt-0 mt-3">
                   <Button
                     size="small"

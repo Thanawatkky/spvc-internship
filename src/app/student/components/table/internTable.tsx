@@ -26,6 +26,8 @@ import { useSession } from "next-auth/react";
 import { HiOutlineExclamationCircle } from "react-icons/hi";
 import useSWR from "swr";
 
+import { compressImage } from "@/lib/compressImage";
+
 dayjs.extend(customParseFormat)
 export interface PaginationTableType {
   id?: string;
@@ -43,6 +45,7 @@ const InternReport = () => {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState<PaginationTableType | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
   const rerender = React.useReducer(() => ({}), {})[1];
@@ -97,19 +100,33 @@ const InternReport = () => {
 
   async function handleSubmitUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    setIsSubmitting(true);
 
-    const res = await fetch(editData ? `/api/report/${editData.id}` : `/api/report`, {
-      method: editData ? "PUT" : "POST",
-      body: formData,
-    });
-    if (res.ok) {
-      setOpen(false);
-      mutate();
+    try {
+      const formData = new FormData(e.currentTarget);
+
+      // บีบอัดรูปภาพก่อนส่ง (ถ้ามี)
+      const imageFile = formData.get("image") as File;
+      if (imageFile && imageFile.size > 0) {
+        const compressedFile = await compressImage(imageFile, 1, 1920);
+        formData.set("image", compressedFile, compressedFile.name);
+      }
+
+      const res = await fetch(editData ? `/api/report/${editData.id}` : `/api/report`, {
+        method: editData ? "PUT" : "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        setOpen(false);
+        mutate();
+      }
+      const data = await res.json();
+      showToast(data.message || data.error, data.type)
+    } catch (error) {
+      showToast("เกิดข้อผิดพลาดในการส่งข้อมูล", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    const data = await res.json();
-    showToast(data.message || data.error, data.type)
-
   }
 
 
@@ -285,7 +302,9 @@ const InternReport = () => {
                     <FileInput id="file-upload-helper-text" accept="image/png, image/jpeg" name="image" />
                   </div>
                   <div className="w-full flex mt-6 text-end justify-end">
-                    <Button type="submit">รายงานผล</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "กำลังส่งข้อมูล..." : "รายงานผล"}
+                    </Button>
                   </div>
                 </form>
               </div>

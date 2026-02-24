@@ -91,6 +91,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // 🔹 redirect "/" ไป "/protected" เพื่อให้ redirect ตาม role
+  if (pathname === "/" && user) {
+    return NextResponse.redirect(new URL("/protected", request.url));
+  }
+
   // 🔹 role 7 ห้ามเข้า protected routes อื่น
   if (user?.role === 7) {
     const protectedPaths = ["/admin", "/board", "/departments", "/teacher", "/supervision"];

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+dayjs.extend(utc);
 import { prisma } from "@/lib/db";
 import { excelSerialToDate } from "@/lib/utils";
 import { formatThaiDateFixed } from "@/lib/thaiDateConvert";
@@ -321,7 +323,7 @@ export async function POST(req: Request) {
               errorCount++;
               continue;
             }
-            const passwordString = dayjs(birthday).add(543, 'year').format('DD/MM/YYYY')
+            const passwordString = dayjs.utc(birthday).add(7, 'hour').add(543, 'year').format('DD/MM/YYYY')
 
             // Create user with student
             await tx.user.create({

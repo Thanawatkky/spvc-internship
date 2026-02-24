@@ -225,7 +225,12 @@ const FormStudent: React.FC<FormStudnetProps> = ({ id }) => {
     form.append("firstname", formData.firstname ?? "");
     form.append("lastname", formData.lastname ?? "");
     form.append("sex", formData.sex?.toString() ?? "");
-    form.append("birthday", formData.birthday?.toISOString() ?? "");
+    if (formData.birthday) {
+      const y = formData.birthday.getFullYear();
+      const m = String(formData.birthday.getMonth() + 1).padStart(2, '0');
+      const d = String(formData.birthday.getDate()).padStart(2, '0');
+      form.append("birthday", `${y}-${m}-${d}`);
+    }
     form.append("educationLevel", formData.educationLevel?.toString() ?? "");
     form.append("departmentId", formData.departmentId?.toString() ?? "");
     form.append("phone", formData.phone ?? "");

@@ -20,4 +20,6 @@ __tests__
 *.test.ts
 jest.config.ts
 
+tests
+
 .gitignore

@@ -3,6 +3,8 @@ import { parseForm } from "@/lib/uploadFile";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from 'bcryptjs'
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+dayjs.extend(utc);
 export async function GET() {
   try {
     const students = await prisma.student.findMany({
@@ -38,14 +40,40 @@ export async function POST(req: NextRequest) {
         .map(([key, value]) => [key, String(value)])
     );
 
-    const file = formData.get("user_img") as File;
+    // ตรวจสอบข้อมูลที่จำเป็น
+    const requiredFields: { key: string; label: string }[] = [
+      { key: "firstname", label: "ชื่อ" },
+      { key: "lastname", label: "นามสกุล" },
+      { key: "citizenId", label: "เลขบัตรประชาชน" },
+      { key: "sex", label: "เพศ" },
+      { key: "phone", label: "เบอร์โทรศัพท์" },
+      { key: "birthday", label: "วันเกิด" },
+      { key: "studentId", label: "รหัสนักศึกษา" },
+      { key: "educationLevel", label: "ระดับการศึกษา" },
+      { key: "major_id", label: "สาขาวิชา" },
+      { key: "department", label: "แผนก" },
+      { key: "academicYear", label: "ปีการศึกษา" },
+      { key: "room", label: "ห้อง" },
+      { key: "term", label: "ภาคเรียน" },
+      { key: "gradeLevel", label: "ชั้นปี" },
+    ];
 
-    if (!file) {
+    const missingFields = requiredFields.filter(
+      (f) => !data[f.key] || data[f.key].trim() === ""
+    );
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { message: "กรุณาอัพโหลดรูปภาพ", type: "error" },
+        {
+          message: `กรุณากรอกข้อมูลให้ครบ: ${missingFields.map((f) => f.label).join(", ")}`,
+          type: "error",
+        },
         { status: 400 }
       );
     }
+
+    // รูปภาพไม่จำเป็นต้องอัปโหลด (ใช้รูป default ถ้าไม่มี)
+    const file = formData.get("user_img") as File | null;
 
     // Check for existing user
     const existingUser = await prisma.user.findFirst({
@@ -56,16 +84,16 @@ export async function POST(req: NextRequest) {
         ]
       }
     });
-    
+
     if (existingUser) {
       let message = "พบข้อมูลผู้ใช้ดังกล่าวในระบบแล้ว";
-    
+
       if (existingUser.citizenId === data.citizenId) {
         message = "พบข้อมูลผู้ใช้ดังกล่าวในระบบแล้ว (เลขบัตรประชาชนซ้ำ)";
       } else if (existingUser.phone === data.phone) {
         message = "พบข้อมูลเบอร์โทรศัพท์ดังกล่าวในระบบแล้ว";
       }
-    
+
       return NextResponse.json(
         { message, type: "error" },
         { status: 400 }
@@ -86,11 +114,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Upload file
-    const userImgPath = await parseForm(file);
-    const passwordString = dayjs(data.birthday).add(543, 'year').format('DD/MM/YYYY')
-    console.log("password:",passwordString);
-    
+    // Upload file ถ้ามีรูปภาพ
+    let userImgPath = "avatar.jpg";
+    if (file && file.size > 0) {
+      userImgPath = await parseForm(file);
+    }
+
+    const passwordString = dayjs.utc(data.birthday).add(7, 'hour').add(543, 'year').format('DD/MM/YYYY')
+
     const user = await prisma.user.create({
       data: {
         firstname: data.firstname,
@@ -100,20 +131,20 @@ export async function POST(req: NextRequest) {
         phone: data.phone,
         birthday: new Date(data.birthday),
         user_img: userImgPath,
-        
+
         student: {
           create: {
             studentId: data.studentId,
             educationLevel: Number(data.educationLevel),
             major_id: Number(data.major_id),
-            departmentId: Number(data.department), // Make sure form sends this
+            departmentId: Number(data.department),
             academicYear: data.academicYear,
             room: data.room,
             term: data.term,
             gradeLevel: data.gradeLevel,
           },
         },
-        login:{
+        login: {
           create: {
             username: data.studentId,
             password: bcrypt.hashSync(passwordString, 10),
@@ -131,8 +162,6 @@ export async function POST(req: NextRequest) {
         },
       },
     });
-    // Create user and student
-   
 
     return NextResponse.json(
       {
@@ -142,11 +171,9 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    // // console.log("Error creating student:", JSON.parse(String(error)));
-    // return NextResponse.json({message: error}, {status: 500});
     return NextResponse.json(
       {
-        message: "เกิดข้อผิดพลาดในการเพิ่มข้อมูล"+error,
+        message: "เกิดข้อผิดพลาดในการเพิ่มข้อมูล",
         type: "error",
         error: error instanceof Error ? error.message : "Unknown error",
       },

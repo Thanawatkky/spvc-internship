@@ -131,8 +131,53 @@ const StudentDetailTable = ({ id }: StudentProps) => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
+    // === หน้าปก ===
+    pdf.setFont('THSarabunNew');
 
-    const headerText = `รายงานการฝึกงาน \n ${data?.studentId}  ${data?.user?.sex === 1 ? "นาย" : data?.user?.sex === 2 ? "นางสาว" : ""} ${data?.user?.firstname} ${data?.user?.lastname} ระดับชั้น ${data?.gradeLevel} กลุ่ม ${data?.room} สาขาวิชา ${data?.major?.major_name}`;
+    // โลโก้ - จัดให้อยู่ตรงกลาง
+    const logoWidth = 50;
+    const logoHeight = 50;
+    const logoX = (pageWidth - logoWidth) / 2;
+    pdf.addImage("/images/logos/logo_pdf.png", 'PNG', logoX, 30, logoWidth, logoHeight);
+
+    // ชื่อสถาบัน
+    pdf.setFontSize(40);
+    pdf.text('วิทยาลัยอาชีวะศึกษาสุพรรณบุรี', pageWidth / 2, 100, { align: 'center' });
+
+    // หัวข้อรายงาน
+    pdf.setFontSize(30);
+    pdf.text('รายงานผลการฝึกงาน', pageWidth / 2, 120, { align: 'center' });
+
+    // รายละเอียดภาคเรียน
+    pdf.setFontSize(30);
+    const currentYear = new Date().getFullYear() + 543;
+    pdf.text(`ภาคเรียนที่ ${data?.term || '1'} ปีการศึกษา ${data?.academicYear || currentYear}`, pageWidth / 2, 140, { align: 'center' });
+
+    // ข้อมูลนักศึกษา - จัดให้อยู่ตรงกลาง
+    pdf.setFontSize(30);
+    const sexPrefix = data?.user?.sex === 1 ? "นาย" : data?.user?.sex === 2 ? "นางสาว" : "";
+    const studentInfo2 = [
+      `${data?.studentId || ''}`,
+      `${sexPrefix} ${data?.user?.firstname || ''} ${data?.user?.lastname || ''}`,
+      `ระดับชั้น ${data?.gradeLevel || ''} กลุ่ม ${data?.room || ''}`,
+      `สาขาวิชา ${data?.major?.major_name || ""}`
+    ];
+
+    let yPosition = 170;
+    studentInfo2.forEach(info => {
+      pdf.text(info, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 20;
+    });
+
+    // หัวข้อด้านล่าง
+    pdf.setFontSize(40);
+    pdf.text('คำนำงานคณะกรรมการการอาชีวศึกษา', pageWidth / 2, 250, { align: 'center' });
+    pdf.text('กระทรวงศึกษาธิการ', pageWidth / 2, 270, { align: 'center' });
+
+    // === หน้าตาราง ===
+    pdf.addPage();
+
+    const headerText = `รายงานการฝึกงาน \n ${data?.studentId}  ${sexPrefix} ${data?.user?.firstname} ${data?.user?.lastname} ระดับชั้น ${data?.gradeLevel} กลุ่ม ${data?.room} สาขาวิชา ${data?.major?.major_name}`;
     pdf.setFont('THSarabunNew');
     pdf.setFontSize(18);
     pdf.text(headerText, pageWidth / 2, 15, { align: 'center' });
