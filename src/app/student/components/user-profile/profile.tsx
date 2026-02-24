@@ -71,11 +71,11 @@ export default function EditProfilePage() {
                 className="self-center"
               />
               <div className="text-center sm:text-left w-full">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">{`${data.firstname} ${data.lastname}`}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">{`${data?.firstname ?? ''} ${data?.lastname ?? ''}`}</h2>
                 <p className="text-sm sm:text-base text-gray-500">{userRole(Number(session?.user.role))}</p>
                 <div className="flex mt-3">
                   <Icon icon={'tabler:phone'} className="text-base me-1 relative top-0.5" />
-                  {data.phone}
+                  {data?.phone}
                 </div>
               </div>
 
@@ -112,7 +112,7 @@ export default function EditProfilePage() {
                               name="firstname"
                               placeholder="กรอกนามสกุล"
                               id="firstname"
-                              defaultValue={data.firstname}
+                              defaultValue={data?.firstname}
                             />
                           </div>
                           <div className="mb-3">
@@ -121,7 +121,7 @@ export default function EditProfilePage() {
                               name="lastname"
                               placeholder="กรอกนามสกุล"
                               id="lastname"
-                              defaultValue={data.lastname}
+                              defaultValue={data?.lastname}
                             />
                           </div>
                           <div className="mb-3">
@@ -132,7 +132,7 @@ export default function EditProfilePage() {
                               name="phone"
                               placeholder="เบอร์โทรศัพท์"
                               id="phone"
-                              defaultValue={data.phone}
+                              defaultValue={data?.phone}
                             />
                           </div>
                           <div className="mb-3">
@@ -203,10 +203,10 @@ export default function EditProfilePage() {
               </Modal>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 text-sm sm:text-base">
-              <Field label="ชื่อ" value={data.firstname} />
-              <Field label="นามสกุล" value={data.lastname} />
-              <Field label="เลขบัตรประชาชน" value={data.citizenId} />
-              <Field label="เบอร์โทรศัพท์" value={data.phone} />
+              <Field label="ชื่อ" value={data?.firstname ?? '-'} />
+              <Field label="นามสกุล" value={data?.lastname ?? '-'} />
+              <Field label="เลขบัตรประชาชน" value={data?.citizenId ?? '-'} />
+              <Field label="เบอร์โทรศัพท์" value={data?.phone ?? '-'} />
 
             </div>
           </div>

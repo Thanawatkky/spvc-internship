@@ -2,12 +2,17 @@ import { NextResponse, NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // 🔹 ข้าม API routes ทั้งหมด (รวมถึง /api/auth/session)
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
   const user = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
   });
-
-  const { pathname } = request.nextUrl;
 
   // 🔹 ไม่ได้ล็อกอิน → redirect ไป signin
   if (!user && pathname !== "/signin") {
@@ -41,9 +46,9 @@ export async function middleware(request: NextRequest) {
       4: "/teacher",
       5: "/supervision",
       // 6: "/company",
-      7: "/",
+      7: "/student",
     };
-    
+
     const targetRoute = roleRoutes[user.role as number];
     if (targetRoute) {
       return NextResponse.redirect(new URL(targetRoute, request.url));
@@ -59,9 +64,9 @@ export async function middleware(request: NextRequest) {
       4: "/teacher",
       5: "/supervision",
       // 6: "/company",
-      7: "/",
+      7: "/student",
     };
-    
+
     const targetRoute = roleRoutes[user.role as number];
     if (targetRoute) {
       return NextResponse.redirect(new URL(targetRoute, request.url));
@@ -76,6 +81,7 @@ export async function middleware(request: NextRequest) {
     { prefix: "/teacher", role: 4 },
     { prefix: "/supervision", role: 5 },
     // { prefix: "/company", role: 6 },
+    { prefix: "/student", role: 7 },
   ];
 
   // ตรวจสอบ specific routes ก่อน
@@ -85,18 +91,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 🔹 ตรวจสอบ root path "/" - เฉพาะ role 7 เท่านั้นที่เข้าได้
-  if (pathname === "/" && user?.role !== 7) {
-    return NextResponse.redirect(new URL("/protected", request.url));
-  }
-
-  // 🔹 role 7 ห้ามเข้า protected routes
+  // 🔹 role 7 ห้ามเข้า protected routes อื่น
   if (user?.role === 7) {
     const protectedPaths = ["/admin", "/board", "/departments", "/teacher", "/supervision"];
     const isAccessingProtected = protectedPaths.some(path => pathname.startsWith(path));
-    
+
     if (isAccessingProtected) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/student", request.url));
     }
   }
 
@@ -106,6 +107,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/student/:path*",
     "/admin/:path*",
     "/board/:path*",
     "/departments/:path*",

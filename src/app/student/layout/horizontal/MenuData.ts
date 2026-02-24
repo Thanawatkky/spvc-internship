@@ -11,7 +11,7 @@ const Menuitems = [
         title: "Modern",
         icon: 'tabler:aperture',
         id: uniqueId(),
-        href: "/",
+        href: "/student",
       },
       {
         title: "eCommerce",
@@ -119,7 +119,7 @@ const Menuitems = [
         icon: "tabler:mail",
         href: "/apps/email",
       },
-      
+
       {
         id: uniqueId(),
         title: "Notes",
@@ -136,7 +136,7 @@ const Menuitems = [
         title: "Invoice",
         id: uniqueId(),
         icon: "tabler:file-text",
-        href:"",
+        href: "",
         children: [
           {
             id: uniqueId(),
@@ -164,7 +164,7 @@ const Menuitems = [
         title: "User Profile",
         id: uniqueId(),
         icon: "tabler:user-circle",
-        href:"",
+        href: "",
         children: [
           {
             id: uniqueId(),
@@ -188,8 +188,8 @@ const Menuitems = [
           },
         ],
       },
-      
-     
+
+
     ],
   },
 

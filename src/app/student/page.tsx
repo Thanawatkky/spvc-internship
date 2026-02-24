@@ -3,7 +3,6 @@
 import React from "react";
 
 import InternshipReportForm from "./components/profileJob";
-import { TopCards } from "./components/TopCards";
 
 const Students = () => {
  

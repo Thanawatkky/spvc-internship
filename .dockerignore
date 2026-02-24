@@ -16,5 +16,8 @@ cache
 
 # Node.js
 node_modules
+__tests__
+*.test.ts
+jest.config.ts
 
 .gitignore
