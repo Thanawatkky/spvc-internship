@@ -38,6 +38,14 @@ interface Inturnship {
   dayperweeks: string;
 }
 
+interface Advisor {
+  id: number;
+  user: {
+    firstname: string;
+    lastname: string;
+  };
+}
+
 interface Student {
   id: number;
   studentId: string;
@@ -60,6 +68,7 @@ interface Student {
   inturnship: Inturnship;
   user: UserData;
   report: Report[];
+  advisor: Advisor | null;
 }
 
 export interface UserData {
@@ -67,6 +76,8 @@ export interface UserData {
   firstname: string;
   lastname: string;
   sex: number;
+  phone: string | null;
+  birthday: string | null;
 }
 
 type StudentProps = {
@@ -90,7 +101,10 @@ const StudentDetailTable = ({ id }: StudentProps) => {
     department: 'กำลังโหลด...',
     major: 'กำลังโหลด...',
     academicYear: 'กำลังโหลด...',
-    internshipDays: 'กำลังโหลด...'
+    internshipDays: 'กำลังโหลด...',
+    birthday: 'กำลังโหลด...',
+    phone: 'กำลังโหลด...',
+    advisor: 'กำลังโหลด...'
   });
 
   const { data, error, isLoading, mutate } = useSWR<Student>(
@@ -107,7 +121,12 @@ const StudentDetailTable = ({ id }: StudentProps) => {
             academicYear: data
               ? `${data.term}/${data.academicYear}`
               : 'ไม่มีข้อมูล',
-            internshipDays: data.inturnship?.selectedDays?.join(', ') || 'ไม่มีข้อมูล'
+            internshipDays: data.inturnship?.selectedDays?.join(', ') || 'ไม่มีข้อมูล',
+            birthday: data.user?.birthday ? formatThaiDate(data.user.birthday) : 'ไม่มีข้อมูล',
+            phone: data.user?.phone || 'ไม่มีข้อมูล',
+            advisor: data.advisor
+              ? `${data.advisor.user.firstname} ${data.advisor.user.lastname}`
+              : 'ไม่มีข้อมูล'
           });
         }
       },
@@ -262,6 +281,18 @@ const StudentDetailTable = ({ id }: StudentProps) => {
         <div>
           <p className="text-sm text-gray-500">วันฝึกงาน</p>
           <p className="text-base font-medium">{studentInfo.internshipDays}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">วันเกิด</p>
+          <p className="text-base font-medium">{studentInfo.birthday}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">เบอร์โทร</p>
+          <p className="text-base font-medium">{studentInfo.phone}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">ครูที่ปรึกษา</p>
+          <p className="text-base font-medium">{studentInfo.advisor}</p>
         </div>
       </div>
       <div className="flex justify-end items-center my-6">

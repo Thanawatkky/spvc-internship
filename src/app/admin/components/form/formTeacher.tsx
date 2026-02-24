@@ -13,14 +13,14 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 type Education = {
   id: number;
-    name: string;
-    createAt: Date;
+  name: string;
+  createAt: Date;
 }
 type Department = {
   id: number;
-    depname: string;
-    createAt: Date;
-    updateAt: Date;
+  depname: string;
+  createAt: Date;
+  updateAt: Date;
 }
 
 type Teacher = {
@@ -40,7 +40,7 @@ type Teacher = {
   departmentId: number | null;
   phone: string | null;
   role?: number | null
-  user_img ?: File | null
+  user_img?: File | null
 }
 
 type ErrorrMessage = {
@@ -65,9 +65,9 @@ interface FormStudnetProps {
   id?: string; // prop นี้ไม่ส่งมาก็ได้
 }
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
-const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
-  const { data: majors, isLoading: isMajorLoading , error} = useSWR(`/api/major`, fetcher);
-  const { data: educations, isLoading: isEducationLoading , error: eduError} = useSWR(`/api/education`, fetcher);
+const FormTeacher: React.FC<FormStudnetProps> = ({ id }) => {
+  const { data: majors, isLoading: isMajorLoading, error } = useSWR(`/api/major`, fetcher);
+  const { data: educations, isLoading: isEducationLoading, error: eduError } = useSWR(`/api/education`, fetcher);
   const [rows, setRows] = useState<Education[] | null>([]);
   const [departments, setDepartments] = useState<Department[] | null>([])
   const [isLoading, setIsLoading] = useState(true);
@@ -109,9 +109,9 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
     user_img: ""
   });
   const [errors, setErrors] = useState<ErrorrMessage>(createEmptyErrors());
-  
- useEffect(() => {
-   if(isMajorLoading) return; 
+
+  useEffect(() => {
+    if (isMajorLoading) return;
     if (!formData.departmentId) {
       // ยังไม่ได้เลือก department → แสดงทุก major
       setFilteredMajors(majors);
@@ -122,7 +122,7 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
       );
       setFilteredMajors(filtered);
     }
-   
+
   }, [formData.departmentId, majors]);
 
   useEffect(() => {
@@ -133,17 +133,17 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
           fetch("/api/education"),
           fetch("/api/departments")
         ]);
-        
+
         const [eduData, depData] = await Promise.all([
           eduRes.json(),
           depRes.json()
         ]);
-        
+
         setRows(eduData.data);
         setDepartments(depData);
-  
-        if(id) {
-          const userRes = await fetch(`/api/teachers/${id}`, {cache: "no-store"});
+
+        if (id) {
+          const userRes = await fetch(`/api/teachers/${id}`, { cache: "no-store" });
           const userData = await userRes.json();
           setFormData({
             citizenId: userData.citizenId || null,
@@ -166,7 +166,7 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
         setIsLoading(false);
       }
     };
-  
+
     fetchData();
   }, [id]);
 
@@ -185,14 +185,14 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
       [id]: value === "" ? null : Number(value), // ถ้าค่าเป็น number
     }));
   };
-  
+
 
   const validate = () => {
     // สร้าง error messages ใหม่เริ่มจากค่าว่างทุกครั้ง
     const newErrors = createEmptyErrors();
     let isValid = true;
-  
-  
+
+
     if (!formData.firstname) {
       newErrors.firstname = "กรุณากรอกชื่อ";
       isValid = false;
@@ -214,14 +214,22 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
       newErrors.sex = "กรุณาเลือกเพศ";
       isValid = false;
     }
+    if (!formData.birthday) {
+      newErrors.birthdate = "กรุณาเลือกวันเกิด";
+      isValid = false;
+    }
     if (!formData.role) {
       newErrors.role = "กรุณาเลือกตำแหน่ง";
       isValid = false;
     }
-    
-    if(formData.role === 4 || formData.role === 5) {
+    if (formData.role !== 2 && !formData.departmentId) {
+      newErrors.departmentId = "กรุณาเลือกแผนกวิชา";
+      isValid = false;
+    }
+
+    if (formData.role === 4 || formData.role === 5) {
       if (!formData.majorId) {
-        newErrors.departmentId = "กรุณาเลือกสาขาวิชา";
+        newErrors.majorId = "กรุณาเลือกสาขาวิชา";
         isValid = false;
       }
       if (!formData.room) {
@@ -237,11 +245,11 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
         isValid = false;
       }
       if (!formData.term) {
-        newErrors.term = "กรุณากรอกภาคเรียน";
+        newErrors.term = "กรุณาเลือกภาคเรียน";
         isValid = false;
       }
       if (!formData.grade) {
-        newErrors.grade = "กรุณากรอกระดับชั้น";
+        newErrors.grade = "กรุณาเลือกระดับชั้น";
         isValid = false;
       }
 
@@ -258,7 +266,8 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
   };
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if(!validate()) {
+    if (!validate()) {
+      showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
       return false;
     }
     const form = new FormData();
@@ -280,20 +289,20 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
     if (formData.user_img) {
       form.append("user_img", formData.user_img);
     }
- 
-    const res = await fetch(`/api/teachers${ id ? `/${id}` : ``}`,{
+
+    const res = await fetch(`/api/teachers${id ? `/${id}` : ``}`, {
       method: id ? "PUT" : "POST",
       body: form
     })
 
-    if(!res.ok) {
+    if (!res.ok) {
       const err = await res.json();
       showToast(err.message, err.type)
       // console.log(err.message);
-    }else{
+    } else {
       const response = await res.json();
-      
-      
+
+
       showToast(response.message, response.type)
       setFormData({
         firstname: "",
@@ -311,11 +320,11 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
         departmentId: null,
         role: null,
         user_img: null
-  
+
       });
       router.refresh();
     }
-    
+
   };
   const handleReset = () => {
     setFormData({
@@ -336,8 +345,8 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
       user_img: null
     });
     setErrors(createEmptyErrors());
-    
-    
+
+
   };
 
 
@@ -347,219 +356,219 @@ const FormTeacher: React.FC<FormStudnetProps> = ({id}) => {
     <div>
       <TitleCard title={`${id ? `แก้ไขข้อมูลอาจารย์ประจำแผนกวิชา` : 'เพิ่มข้อมูลอาจารย์ประจำแผนกวิชา'}`}>
         {/* <div className="overflow-x-auto"> */}
-       
-            <form onSubmit={handleSubmit} onReset={handleReset}>
-                  
 
-                 
+        <form onSubmit={handleSubmit} onReset={handleReset}>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.875rem] mt-[1.875rem]">
-                
-                {/* Left */}
-                <div className="flex flex-col gap-[1.875rem]">
-               
-               
-               <FormRow label="เลขบัตรประชาชน" htmlFor="citizenId">
-                  <TextInput
-                        id="citizenId"
-                        name="citizenId"
-                        value={formData.citizenId as string}
-                        onChange={handleChange}
-                        placeholder="เช่น 1723200000000"
-                        className="xxl:ms-12"
-                    
-                      />
-                    <span className="text-red-500">{errors.citizenId}</span>
-  
-                  </FormRow>
-                  <FormRow label="ชื่อ" htmlFor="firstname">
-                    <TextInput
-                      id="firstname"
-                      value={formData.firstname as string}
-                      onChange={handleChange}
-                      placeholder="กรอกชื่ออาจารย์ผู้ดูแลแผนกวิชา"
-                    />
-                    <span className="text-red-500">{errors.firstname}</span>
-                  </FormRow>
-                  <FormRow label="นามสกุล" htmlFor="lastname">
-                    <TextInput
-                      id="lastname"
-                      value={formData.lastname as string}
-                      onChange={handleChange}
-                      placeholder="กรอกนามสกุลอาจารย์ผู้ดูแลแผนกวิชา"
-                    />
-                    <span className="text-red-500">{errors.lastname}</span>
-                  </FormRow>
-                 
-                  <FormRow label="วันเกิด" htmlFor="birthdate">
-                    <Datepicker
-                      language="th"
-                        onSelectedDateChanged={(date) => setFormData({...formData, birthday: date})}
-                    />
-                    <span className="text-red-500">{errors.birthdate}</span>
 
-                  </FormRow>
-                  { (formData.role === 4 || formData.role === 5) && (
-                    <>
-                     <FormRow label="ระดับการศึกษา" htmlFor="educationId">
-                     <Select id="educationId" value={String(formData.educationId)} onChange={handleSelectChange}>
-                       <option hidden value="">เลือกระดับการศึกษา (ที่รับผิดชอบ)</option>
-                       {isEducationLoading ? (
-                         <option>Loading...</option>
-                       ) : educations.length > 0 ? ( 
-                         educations?.map((education: any, index: any) => (
-                         <option value={String(education.id)} key={index}>{education.name}</option>
-                       ))) : (
-                         <option>ไม่พบข้อมูล</option>
-                       )}
- 
-                     </Select>
-                     <span className="text-red-500">{errors.educationId}</span>
-                   </FormRow>
-                  
-                      <FormRow label="ชั้นปี" htmlFor="grade">
-                      <Select id="grade" value={formData.grade !== null ? String(formData.grade) : ""} onChange={handleSelectChange}>
-                        <option hidden value="">เลือกชั้นทีปี(ที่รับผิดชอบ)</option>
 
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                          <option value="3">3</option>
-                       
-  
-                      </Select>
-                      <span className="text-red-500">{errors.grade}</span>
-                    </FormRow>
-                    <FormRow label="ห้อง" htmlFor="room">
-                      <TextInput
-                        id="room"
-                        name="room"
-                        value={formData.room as string}
-                        onChange={handleChange}
-                        placeholder="ห้องหรือกลุ่มที่รับผิดชอบ"
-                        className="xxl:ms-12"
-                    
-                      />
-                      <span className="text-red-500">{errors.room}</span>
-                    </FormRow>
-                    </>
-                )}
-                  <FormRow label="รูปโปรไฟล์" htmlFor="user_img">
-                  <input
-                    type="file"
-                    name="user_img"
-                    id="user_img"
-                    accept="image/jpeg"
-                    onChange={handleFileChange}
-                  />
 
-                    <span className="text-red-500">{errors.user_img}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.875rem] mt-[1.875rem]">
 
-                  </FormRow>
-                  
-                </div>
+            {/* Left */}
+            <div className="flex flex-col gap-[1.875rem]">
 
-                {/* Right */}
-                <div className="flex flex-col gap-[1.875rem]">
-                 
-                  <FormRow label="เบอร์โทร" htmlFor="phone" >
-                    <TextInput
-                      id="phone"
-                      value={formData.phone as string}
-                      onChange={handleChange}
-                      placeholder="เช่น 0987654321"
-                    />
-                    <span className="text-red-500">{errors.phone}</span>
-                  </FormRow>
-                  <FormRow label="เพศ" htmlFor="sex" >
-                    <Select id="sex" value={formData.sex !== null ? String(formData.sex) : ""} onChange={handleSelectChange}>
-                      <option hidden value="">เลือกเพศของอาจารย์ผู้ดูแลแผนกวิชา</option>
-                      <option value="1">ชาย</option>
-                      <option value="2">หญิง</option>
+
+              <FormRow label="เลขบัตรประชาชน" htmlFor="citizenId" required>
+                <TextInput
+                  id="citizenId"
+                  name="citizenId"
+                  value={formData.citizenId as string}
+                  onChange={handleChange}
+                  placeholder="เช่น 1723200000000"
+                  className="xxl:ms-12"
+
+                />
+                <span className="text-red-500">{errors.citizenId}</span>
+
+              </FormRow>
+              <FormRow label="ชื่อ" htmlFor="firstname" required>
+                <TextInput
+                  id="firstname"
+                  value={formData.firstname as string}
+                  onChange={handleChange}
+                  placeholder="กรอกชื่ออาจารย์ผู้ดูแลแผนกวิชา"
+                />
+                <span className="text-red-500">{errors.firstname}</span>
+              </FormRow>
+              <FormRow label="นามสกุล" htmlFor="lastname" required>
+                <TextInput
+                  id="lastname"
+                  value={formData.lastname as string}
+                  onChange={handleChange}
+                  placeholder="กรอกนามสกุลอาจารย์ผู้ดูแลแผนกวิชา"
+                />
+                <span className="text-red-500">{errors.lastname}</span>
+              </FormRow>
+
+              <FormRow label="วันเกิด" htmlFor="birthdate" required>
+                <Datepicker
+                  language="th"
+                  onSelectedDateChanged={(date) => setFormData({ ...formData, birthday: date })}
+                />
+                <span className="text-red-500">{errors.birthdate}</span>
+
+              </FormRow>
+              {(formData.role === 4 || formData.role === 5) && (
+                <>
+                  <FormRow label="ระดับการศึกษา" htmlFor="educationId" required>
+                    <Select id="educationId" value={String(formData.educationId)} onChange={handleSelectChange}>
+                      <option hidden value="">เลือกระดับการศึกษา (ที่รับผิดชอบ)</option>
+                      {isEducationLoading ? (
+                        <option>Loading...</option>
+                      ) : educations.length > 0 ? (
+                        educations?.map((education: any, index: any) => (
+                          <option value={String(education.id)} key={index}>{education.name}</option>
+                        ))) : (
+                        <option>ไม่พบข้อมูล</option>
+                      )}
+
                     </Select>
-                    <span className="text-red-500">{errors.sex}</span>
-
+                    <span className="text-red-500">{errors.educationId}</span>
                   </FormRow>
-                  
-                
-                  <FormRow label="ตำแหน่ง" htmlFor="role" >
-                    <Select id="role" value={formData.role !== null ? String(formData.role) : ""} onChange={handleSelectChange}>
-                      <option hidden value="">เลือกตำแหน่งของบุคคลากร</option>
-                      <option value="2">ผู้บริหาร</option>
-                      <option value="3">หัวหน้าแผนกวิชา</option>
-                      <option value="4">ครูที่ปรึกษา</option>
-                      <option value="5">ครูทวิภาคี</option>
+
+                  <FormRow label="ชั้นปี" htmlFor="grade" required>
+                    <Select id="grade" value={formData.grade !== null ? String(formData.grade) : ""} onChange={handleSelectChange}>
+                      <option hidden value="">เลือกชั้นทีปี(ที่รับผิดชอบ)</option>
+
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+
+
                     </Select>
-                    <span className="text-red-500">{errors.role}</span>
-
+                    <span className="text-red-500">{errors.grade}</span>
                   </FormRow>
-                  { formData.role !== 2 && (
-                                    <FormRow label="แผนกวิชา" htmlFor="department">
-                                    <Select id="departmentId" value={formData.departmentId !== null ? String(formData.departmentId) : ""} onChange={handleSelectChange}>
-                                      <option hidden value="">เลือกแผนกวิชา</option>
-                                      {departments?.map((dep) => (
-                                        <option value={dep.id} key={dep.id}>{dep.depname}</option>
-                                      ))}
-                                    </Select>
-                                    <span className="text-red-500">{errors.departmentId}</span>
-                                  </FormRow>
-                                  )  
-                  }
-                 
-                  { (formData.role === 4 || formData.role === 5) && (
-                    <>
-                      <FormRow label="สาขาวิชา" htmlFor="major">
-                      <Select id="majorId" value={formData.majorId !== null ? String(formData.majorId) : ""} onChange={handleSelectChange}>
-                        <option hidden value="">เลือกสาขาวิชา(ที่รับผิดชอบ)</option>
-                        {isMajorLoading ? (
-                          <option>Loading...</option>
-                        ) : filteredMajors.length > 0 ? ( 
-                          filteredMajors?.map((major: any) => (
+                  <FormRow label="ห้อง" htmlFor="room" required>
+                    <TextInput
+                      id="room"
+                      name="room"
+                      value={formData.room as string}
+                      onChange={handleChange}
+                      placeholder="ห้องหรือกลุ่มที่รับผิดชอบ"
+                      className="xxl:ms-12"
+
+                    />
+                    <span className="text-red-500">{errors.room}</span>
+                  </FormRow>
+                </>
+              )}
+              <FormRow label="รูปโปรไฟล์" htmlFor="user_img">
+                <input
+                  type="file"
+                  name="user_img"
+                  id="user_img"
+                  accept="image/jpeg"
+                  onChange={handleFileChange}
+                />
+
+                <span className="text-red-500">{errors.user_img}</span>
+
+              </FormRow>
+
+            </div>
+
+            {/* Right */}
+            <div className="flex flex-col gap-[1.875rem]">
+
+              <FormRow label="เบอร์โทร" htmlFor="phone" required>
+                <TextInput
+                  id="phone"
+                  value={formData.phone as string}
+                  onChange={handleChange}
+                  placeholder="เช่น 0987654321"
+                />
+                <span className="text-red-500">{errors.phone}</span>
+              </FormRow>
+              <FormRow label="เพศ" htmlFor="sex" required>
+                <Select id="sex" value={formData.sex !== null ? String(formData.sex) : ""} onChange={handleSelectChange}>
+                  <option hidden value="">เลือกเพศของอาจารย์ผู้ดูแลแผนกวิชา</option>
+                  <option value="1">ชาย</option>
+                  <option value="2">หญิง</option>
+                </Select>
+                <span className="text-red-500">{errors.sex}</span>
+
+              </FormRow>
+
+
+              <FormRow label="ตำแหน่ง" htmlFor="role" required>
+                <Select id="role" value={formData.role !== null ? String(formData.role) : ""} onChange={handleSelectChange}>
+                  <option hidden value="">เลือกตำแหน่งของบุคคลากร</option>
+                  <option value="2">ผู้บริหาร</option>
+                  <option value="3">หัวหน้าแผนกวิชา</option>
+                  <option value="4">ครูที่ปรึกษา</option>
+                  <option value="5">ครูทวิภาคี</option>
+                </Select>
+                <span className="text-red-500">{errors.role}</span>
+
+              </FormRow>
+              {formData.role !== 2 && (
+                <FormRow label="แผนกวิชา" htmlFor="department" required>
+                  <Select id="departmentId" value={formData.departmentId !== null ? String(formData.departmentId) : ""} onChange={handleSelectChange}>
+                    <option hidden value="">เลือกแผนกวิชา</option>
+                    {departments?.map((dep) => (
+                      <option value={dep.id} key={dep.id}>{dep.depname}</option>
+                    ))}
+                  </Select>
+                  <span className="text-red-500">{errors.departmentId}</span>
+                </FormRow>
+              )
+              }
+
+              {(formData.role === 4 || formData.role === 5) && (
+                <>
+                  <FormRow label="สาขาวิชา" htmlFor="major" required>
+                    <Select id="majorId" value={formData.majorId !== null ? String(formData.majorId) : ""} onChange={handleSelectChange}>
+                      <option hidden value="">เลือกสาขาวิชา(ที่รับผิดชอบ)</option>
+                      {isMajorLoading ? (
+                        <option>Loading...</option>
+                      ) : filteredMajors.length > 0 ? (
+                        filteredMajors?.map((major: any) => (
                           <option value={major.id} key={major.id}>{major.major_name}</option>
                         ))) : (
-                          <option>ไม่มีสาขาวิชาในแผนกนี้</option>
-                        )}
+                        <option>ไม่มีสาขาวิชาในแผนกนี้</option>
+                      )}
 
-                      </Select>
-                      <span className="text-red-500">{errors.majorId}</span>
-                    </FormRow>
-                    <FormRow label="ภาคเรียน" htmlFor="term">
-                      <Select id="term" value={String(formData.term)} onChange={handleSelectChange}>
-                        <option hidden value="">เลือกภาคเรียน(ที่รับผิดชอบ)</option>
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                          <option value="3">3</option>  
-                      </Select>
-                      <span className="text-red-500">{errors.years}</span>
-                    </FormRow>
+                    </Select>
+                    <span className="text-red-500">{errors.majorId}</span>
+                  </FormRow>
+                  <FormRow label="ภาคเรียน" htmlFor="term" required>
+                    <Select id="term" value={String(formData.term)} onChange={handleSelectChange}>
+                      <option hidden value="">เลือกภาคเรียน(ที่รับผิดชอบ)</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                    </Select>
+                    <span className="text-red-500">{errors.years}</span>
+                  </FormRow>
 
-                    
-                      <FormRow label="ปีการศึกษา" htmlFor="years">
-                      <TextInput
-                        id="years"
-                        name="years"
-                        value={formData.years as string}
-                        onChange={handleChange}
-                        placeholder="เช่น 2566"
-                        className="xxl:ms-12"
-                    
-                      />
-                      <span className="text-red-500">{errors.years}</span>
-                    </FormRow>
-                    </>
-                )}
-                </div>
-              </div>
 
-              {/* Buttons */}
-              <div className="flex items-center justify-center gap-5 mt-[1.875rem]">
-                <Button type="submit" color="primary">
-                  บันทึกข้อมูล
-                </Button>
-                <Button type="reset" color="failure">
-                  ยกเลิก
-                </Button>
-              </div>
-            </form>
+                  <FormRow label="ปีการศึกษา" htmlFor="years" required>
+                    <TextInput
+                      id="years"
+                      name="years"
+                      value={formData.years as string}
+                      onChange={handleChange}
+                      placeholder="เช่น 2566"
+                      className="xxl:ms-12"
+
+                    />
+                    <span className="text-red-500">{errors.years}</span>
+                  </FormRow>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex items-center justify-center gap-5 mt-[1.875rem]">
+            <Button type="submit" color="primary">
+              บันทึกข้อมูล
+            </Button>
+            <Button type="reset" color="failure">
+              ยกเลิก
+            </Button>
+          </div>
+        </form>
         {/* </div> */}
       </TitleCard>
     </div>
@@ -571,14 +580,18 @@ const FormRow = ({
   label,
   htmlFor,
   children,
+  required = false,
 }: {
   label: string;
   htmlFor: string;
   children: React.ReactNode;
+  required?: boolean;
 }) => (
   <div className="grid grid-cols-12 gap-7 items-center">
     <div className="col-span-3">
-      <Label htmlFor={htmlFor} value={label} />
+      <Label htmlFor={htmlFor}>
+        {label}{required && <span className="text-red-500 ml-1">*</span>}
+      </Label>
     </div>
     <div className="col-span-9">{children}</div>
   </div>

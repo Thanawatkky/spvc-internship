@@ -719,20 +719,20 @@ export function StudentsAllTable() {
                     <TableHead
                       key={header.id}
                       className={`text-gray-900 dark:text-gray-100 ${header.id === "select"
-                          ? "w-12"
-                          : header.id === "index"
-                            ? "w-16"
-                            : header.id === "student_studentId"
-                              ? "w-40"
-                              : header.id === "sex"
+                        ? "w-12"
+                        : header.id === "index"
+                          ? "w-16"
+                          : header.id === "student_studentId"
+                            ? "w-40"
+                            : header.id === "sex"
+                              ? "w-20"
+                              : header.id === "actions"
                                 ? "w-20"
-                                : header.id === "actions"
-                                  ? "w-20"
-                                  : header.id === "student_education_name"
-                                    ? "w-30"
-                                    : header.id === "department_depname"
-                                      ? "w-50"
-                                      : ""
+                                : header.id === "student_education_name"
+                                  ? "w-30"
+                                  : header.id === "department_depname"
+                                    ? "w-50"
+                                    : ""
                         }`}
                     >
                       {header.isPlaceholder
@@ -785,10 +785,11 @@ export function StudentsAllTable() {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between py-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4">
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          แสดง {table.getFilteredRowModel().rows.length} จาก{" "}
-          {allStudents.length} รายการ
+          แสดง {table.getRowModel().rows.length} จาก{" "}
+          {table.getFilteredRowModel().rows.length} รายการ
+          {" "}(ทั้งหมด {allStudents.length} รายการ)
           {departmentFilter !== "all" && (
             <span className="ml-2 text-blue-600 dark:text-blue-400">
               (กรองตามแผนก: {departmentFilter})
@@ -806,6 +807,77 @@ export function StudentsAllTable() {
           )}
         </div>
 
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">แสดง</span>
+            <Select
+              value={String(table.getState().pagination.pageSize)}
+              onValueChange={(value) => table.setPageSize(Number(value))}
+            >
+              <SelectTrigger className="w-[80px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 30, 50].map((size) => (
+                  <SelectItem key={size} value={String(size)} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-600 dark:text-gray-400">รายการ</span>
+          </div>
+
+          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+            <span>หน้า</span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">
+              {table.getState().pagination.pageIndex + 1}
+            </span>
+            <span>จาก</span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">
+              {table.getPageCount()}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+              className="h-8 w-8 p-0"
+            >
+              «
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="h-8 w-8 p-0"
+            >
+              ‹
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="h-8 w-8 p-0"
+            >
+              ›
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+              className="h-8 w-8 p-0"
+            >
+              »
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

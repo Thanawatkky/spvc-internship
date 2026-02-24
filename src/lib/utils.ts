@@ -11,23 +11,23 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function userRole(role: number) {
-  let roleName  = "นักศึกษา";
+  let roleName = "นักศึกษา";
 
-  if(role === 1) roleName = "ผู้ดูแลระบบ";
+  if (role === 1) roleName = "ผู้ดูแลระบบ";
 
-  if(role === 2) roleName = "ผู้บริหาร";
-  if(role === 3) roleName = "หัวหน้าแผนก";
-  if(role === 4) roleName = "ครูที่ปรึกษา";
-  if(role === 5) roleName = "ครูทวิภาคี";
+  if (role === 2) roleName = "ผู้บริหาร";
+  if (role === 3) roleName = "หัวหน้าแผนก";
+  if (role === 4) roleName = "ครูที่ปรึกษา";
+  if (role === 5) roleName = "ครูทวิภาคี";
 
-  return roleName;  
+  return roleName;
 }
 
 export function userSex(sex: number) {
   let sexName;
-  if(sex === 1) sexName = "ชาย"; 
-  if(sex === 2) sexName = "หญิง";
-  
+  if (sex === 1) sexName = "ชาย";
+  if (sex === 2) sexName = "หญิง";
+
   return sexName;
 }
 
@@ -44,14 +44,10 @@ export function excelSerialToDate(serial: number): Date {
 
 
 
- export const formatThaiDate = (dateString: string) => {
-  const thaiMonthsShort = [
-    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
-  ]
+export const formatThaiDate = (dateString: string) => {
   const date = dayjs(dateString)
-  const day = date.date()
-  const month = thaiMonthsShort[date.month()] // month() returns 0-11
+  const day = String(date.date()).padStart(2, '0')
+  const month = String(date.month() + 1).padStart(2, '0') // month() returns 0-11
   const year = date.year() + 543 // Convert to Buddhist year
 
   return `${day}/${month}/${year}`
@@ -77,7 +73,7 @@ export function convertThaiDateToEnglishFormat(thaiDate: string) {
   const day = parseInt(dayStr, 10);
   const month = thaiMonths[monthThai];
   const yearBE = parseInt(yearThaiStr, 10);
-  
+
   // แปลง พ.ศ. เป็น ค.ศ.
   const yearAD = yearBE - 543;
 
